@@ -2,7 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const {
     MongoClient,
-    ServerApiVersion
+    ServerApiVersion,
+    ObjectId
 } = require('mongodb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -40,6 +41,14 @@ async function run() {
             const result = await mirrorCollection.find().toArray();
             res.send(result);
         });
+ 
+        //get mirror by user Id API
+        app.get('/item/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const result = await mirrorCollection.findOne(query);
+            res.send(result);
+        })
     }
     finally{
 
