@@ -2,8 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const {
     MongoClient,
-    ServerApiVersion,
-    ObjectId,
+    ServerApiVersion
 } = require('mongodb');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -22,6 +21,32 @@ app.use(cors());
 // app.options("*", cors(cors(corsConfig)));
 app.use(express.json());
 
+//connect to db
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.lia1v.mongodb.net/?retryWrites=true&w=majority`;
+const client = new MongoClient(uri, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    serverApi: ServerApiVersion.v1
+});
+
+async function run() {
+    try{
+        await client.connect();
+        // console.log('db connected')
+        const mirrorCollection = client.db('Raiyan_Auto_Mirror').collection('mirrors');
+
+        //get all mirrors API
+        app.get('/item', async (req, res) => {
+            const result = await mirrorCollection.find().toArray();
+            res.send(result);
+        });
+    }
+    finally{
+
+    }
+
+}
+    run().catch(console.dir);
 
 
 
