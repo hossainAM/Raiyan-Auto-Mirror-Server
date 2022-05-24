@@ -31,26 +31,26 @@ const client = new MongoClient(uri, {
 });
 
 //Verify JWT
-// const verifyJWT = (req, res, next) => {
-//     //check authorization
-//     const authHeader = req.headers.authorization;
-//     if (!authHeader) {
-//         return res.status(401).send({
-//             message: 'Unauthorized access'
-//         })
-//     }
-//     //verify authorization
-//     const token = authHeader.split(' ')[1]; 
-//     jwt.verify(token, process.env.SECRET_KEY_TOKEN, function (err, decoded) {
-//         if (err) {
-//             return res.status(403).send({
-//                 message: 'Forbidden access'
-//             })
-//         }
-//         req.decoded = decoded;
-//         next();
-//     });
-// }
+const verifyJWT = (req, res, next) => {
+    //check authorization
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({
+            message: 'Unauthorized access'
+        })
+    }
+    //verify authorization
+    const token = authHeader.split(' ')[1]; 
+    jwt.verify(token, process.env.SECRET_KEY_TOKEN, function (err, decoded) {
+        if (err) {
+            return res.status(403).send({
+                message: 'Forbidden access'
+            })
+        }
+        req.decoded = decoded;
+        next();
+    });
+}
 
 async function run() {
     try{
@@ -60,26 +60,11 @@ async function run() {
         const orderCollection = client.db('Raiyan_Auto_Mirror').collection('orders');
         const userCollection = client.db('Raiyan_Auto_Mirror').collection('users');
 
-        // //AUTH
-        // app.post('/login', async (req, res) => {
-        //     const user = req.body;
-        //     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        //         expiresIn: '1d'
-        //     });
-        //     res.send({accessToken});
-        // });
-
         // //get all items API
-        // app.get('/item', async (req, res) => {
-        //     const result = await mirrorCollection.find().toArray();
-        //     res.send(result);
-        // });
-
-         //get all users API
-         app.get('/user', async (req, res) => {
-             const users = await userCollection.find().toArray();
-             res.send(users);
-         });
+        app.get('/item', async (req, res) => {
+            const result = await mirrorCollection.find().toArray();
+            res.send(result);
+        });
  
         //get item by user Id API
         app.get('/item/:id', async (req, res) => {
@@ -98,17 +83,34 @@ async function run() {
 
         //get orders by user email API
         app.get('/order', async (req, res) => {
-            const decodedEmail = req.decoded.email;
+            // const decodedEmail = req.decoded.email;
             const email = req.query.email;
             // console.log(email);
-            if(email === decodedEmail) {
+            // if(email === decodedEmail) {
                 const query = {email: email};
                 const orders = await orderCollection.find(query).toArray();
                 res.send(orders);
-            }
-            else {
-                res.status(403).send({message: 'Forbidden Access'})
-            }
+            // }
+            // else {
+            //     res.status(403).send({message: 'Forbidden Access'})
+            // }
+        });
+
+         //get all users API (verifyJWT)
+         app.get('/user', async (req, res) => {
+             const users = await userCollection.find().toArray();
+             res.send(users);
+         });
+
+       //update a user API (verifyJWT)
+        app.put('/user/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: {role: 'admin'},
+            };
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result);
         });
 
        //update a user API
