@@ -31,48 +31,55 @@ const client = new MongoClient(uri, {
 });
 
 //Verify JWT
-const verifyJWT = (req, res, next) => {
-    //check authorization
-    const authHeader = req.headers.authorization;
-    if (!authHeader) {
-        return res.status(401).send({
-            message: 'Unauthorized access'
-        })
-    }
-    //verify authorization
-    const token = authHeader.split(' ')[1]; 
-    jwt.verify(token, process.env.SECRET_KEY_TOKEN, function (err, decoded) {
-        if (err) {
-            return res.status(403).send({
-                message: 'Forbidden access'
-            })
-        }
-        req.decoded = decoded;
-        next();
-    });
-}
+// const verifyJWT = (req, res, next) => {
+//     //check authorization
+//     const authHeader = req.headers.authorization;
+//     if (!authHeader) {
+//         return res.status(401).send({
+//             message: 'Unauthorized access'
+//         })
+//     }
+//     //verify authorization
+//     const token = authHeader.split(' ')[1]; 
+//     jwt.verify(token, process.env.SECRET_KEY_TOKEN, function (err, decoded) {
+//         if (err) {
+//             return res.status(403).send({
+//                 message: 'Forbidden access'
+//             })
+//         }
+//         req.decoded = decoded;
+//         next();
+//     });
+// }
 
 async function run() {
     try{
         await client.connect();
         // console.log('db connected')
         const mirrorCollection = client.db('Raiyan_Auto_Mirror').collection('mirrors');
-        const orderCollection = client.db('Raiyan_Auto_Mirror').collection('orders')
+        const orderCollection = client.db('Raiyan_Auto_Mirror').collection('orders');
+        const userCollection = client.db('Raiyan_Auto_Mirror').collection('users');
 
-        //AUTH
-        app.post('/login', async (req, res) => {
-            const user = req.body;
-            const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-                expiresIn: '1d'
-            });
-            res.send({accessToken});
-        });
+        // //AUTH
+        // app.post('/login', async (req, res) => {
+        //     const user = req.body;
+        //     const accessToken = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        //         expiresIn: '1d'
+        //     });
+        //     res.send({accessToken});
+        // });
 
-        //get all items API
-        app.get('/item', async (req, res) => {
-            const result = await mirrorCollection.find().toArray();
-            res.send(result);
-        });
+        // //get all items API
+        // app.get('/item', async (req, res) => {
+        //     const result = await mirrorCollection.find().toArray();
+        //     res.send(result);
+        // });
+
+         //get all users API
+         app.get('/user', async (req, res) => {
+             const users = await userCollection.find().toArray();
+             res.send(users);
+         });
  
         //get item by user Id API
         app.get('/item/:id', async (req, res) => {
@@ -90,9 +97,10 @@ async function run() {
         });
 
         //get orders by user email API
-        app.get('/order', verifyJWT, async (req, res) => {
+        app.get('/order', async (req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.query.email;
+            // console.log(email);
             if(email === decodedEmail) {
                 const query = {email: email};
                 const orders = await orderCollection.find(query).toArray();
@@ -101,6 +109,25 @@ async function run() {
             else {
                 res.status(403).send({message: 'Forbidden Access'})
             }
+        });
+
+       //update a user API
+        app.put('/user/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email };
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user,
+            };
+            const result = await userCollection.updateOne(filter, updateDoc, options);
+            //generate and send token
+            const token = jwt.sign({
+                email: email
+            }, process.env.ACCESS_TOKEN_SECRET, {
+            expiresIn: '1d'
+            })
+            res.send({result, token});
         });
     }
     finally{
