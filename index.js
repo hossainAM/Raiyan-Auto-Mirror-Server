@@ -75,6 +75,13 @@ async function run() {
             res.send(result);
         });
 
+        //add new item API
+        app.post('/item', async (req, res) => {
+            const newProduct = req.body;
+            const result = await mirrorCollection.insertOne(newProduct);
+            res.send(result);
+        })
+
         //Order APIs
         //add new order API
         app.post('/order', async (req, res) => {
