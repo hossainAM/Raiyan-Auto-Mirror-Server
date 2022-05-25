@@ -41,7 +41,7 @@ const verifyJWT = (req, res, next) => {
     }
     //verify authorization
     const token = authHeader.split(' ')[1]; 
-    jwt.verify(token, process.env.SECRET_KEY_TOKEN, function (err, decoded) {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function (err, decoded) {
         if (err) {
             return res.status(403).send({
                 message: 'Forbidden access'
@@ -60,7 +60,8 @@ async function run() {
         const orderCollection = client.db('Raiyan_Auto_Mirror').collection('orders');
         const userCollection = client.db('Raiyan_Auto_Mirror').collection('users');
 
-        // //get all items API
+        //Item APIs
+        //get all items API
         app.get('/item', async (req, res) => {
             const result = await mirrorCollection.find().toArray();
             res.send(result);
@@ -74,6 +75,7 @@ async function run() {
             res.send(result);
         });
 
+        //Order APIs
         //add new order API
         app.post('/order', async (req, res) => {
             const order = req.body;
@@ -81,36 +83,50 @@ async function run() {
             res.send(result);
         });
 
+        //get all order API
+        // app.get('/order', async (req, res) => {
+        //     const result = await orderCollection.find().toArray();
+        //     res.send(result);
+        // });
+
         //get orders by user email API
-        app.get('/order', async (req, res) => {
-            // const decodedEmail = req.decoded.email;
+        app.get('/order', verifyJWT, async(req, res) => {
+            const decodedEmail = req.decoded.email;
             const email = req.query.email;
-            // console.log(email);
-            // if(email === decodedEmail) {
+            // const authorization = req.headers.authorization;
+            if(email === decodedEmail) {
                 const query = {email: email};
                 const orders = await orderCollection.find(query).toArray();
-                res.send(orders);
-            // }
-            // else {
-            //     res.status(403).send({message: 'Forbidden Access'})
-            // }
+                return res.send(orders);
+            }
+            else {
+                return res.status(403).send({message: 'Forbidden Access'});
+            }
         });
 
-         //get all users API (verifyJWT)
-         app.get('/user', async (req, res) => {
+        //User APIs
+        //get all users API 
+         app.get('/user', verifyJWT, async (req, res) => {
              const users = await userCollection.find().toArray();
              res.send(users);
          });
 
-       //update a user API (verifyJWT)
-        app.put('/user/admin/:email', async (req, res) => {
+       //update a user API 
+        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-            const filter = { email: email };
-            const updateDoc = {
+            const reqSender = req.decoded.email;
+            const reqSenderAccount = await userCollection.findOne({email: reqSender});
+            if(reqSenderAccount.role === 'admin'){
+                const query = { email: email };
+                const updatedDoc = {
                 $set: {role: 'admin'},
             };
-            const result = await userCollection.updateOne(filter, updateDoc);
-            res.send(result);
+                const result = await userCollection.updateOne(query, updatedDoc);
+                res.send(result);
+            }
+            else{
+                res.status(403).send({message: 'Forbidden Access'})
+            }
         });
 
        //update a user API
@@ -130,6 +146,14 @@ async function run() {
             expiresIn: '1d'
             })
             res.send({result, token});
+        });
+
+        //get user by user roll API
+        app.get('/admin/:email', async (req, res) => {
+            const email = req.params.email;
+            const user = await userCollection.findOne({email: email});
+            const isAdmin = user.role === 'admin';
+            res.send({admin: isAdmin});
         });
     }
     finally{
