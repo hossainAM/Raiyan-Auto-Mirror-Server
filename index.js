@@ -76,11 +76,19 @@ async function run() {
         });
 
         //add new item API
-        app.post('/item', async (req, res) => {
+        app.post('/item', verifyJWT, async (req, res) => {
             const newProduct = req.body;
             const result = await mirrorCollection.insertOne(newProduct);
             res.send(result);
-        })
+        });
+
+        //delete item API
+        app.delete('/item/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const filter = {_id: ObjectId(id)};
+            const result = await mirrorCollection.deleteOne(filter);
+            res.send(result);
+        });
 
         //Order APIs
         //add new order API
