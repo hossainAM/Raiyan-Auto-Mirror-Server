@@ -119,6 +119,14 @@ async function run() {
             }
         });
 
+        //get order by id API
+        app.get('/order/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const query = {_id: ObjectId(id)};
+            const order = await orderCollection.findOne(query);
+            res.send(order);
+        });
+
         //User APIs
         //get all users API 
          app.get('/user', verifyJWT, async (req, res) => {
