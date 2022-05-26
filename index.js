@@ -59,6 +59,7 @@ async function run() {
         const mirrorCollection = client.db('Raiyan_Auto_Mirror').collection('mirrors');
         const orderCollection = client.db('Raiyan_Auto_Mirror').collection('orders');
         const userCollection = client.db('Raiyan_Auto_Mirror').collection('users');
+        const paymentCollection = client.db('Raiyan_Auto_Mirror').collection('payments');
 
         //Item APIs
         //get all items API
@@ -125,6 +126,35 @@ async function run() {
             const query = {_id: ObjectId(id)};
             const order = await orderCollection.findOne(query);
             res.send(order);
+        });
+
+        //Payment API
+        app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+            const product = req.body;
+            const price = product.price;
+            const amount = price*100;
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: 'usd',
+                payment_method_types: ['card']
+            });
+            res.send({clientSecret: paymentIntent.client_secret})
+        });
+
+        //update payment information API
+        app.patch('/order/:id', verifyJWT, async (req, res) => {
+            const id = req.params.id;
+            const payment = req.body;
+            const filter = {_id: ObjectId(id)};
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId,
+                }
+            }
+            const result = await paymentCollection.insertOne(payment);
+            const updatedOrder = await orderCollection.updateOne(filter, updatedDoc);
+            res.send(updatedDoc);
         });
 
         //User APIs
