@@ -222,9 +222,15 @@ async function run() {
 
         //Review APIs
         //add a review API
-        app.post('/review', verifyJWT, async (req, res) => {
+        app.post('/review', async (req, res) => {
             const addReview = req.body;
             const result = await reviewCollection.insertOne(addReview);
+            res.send(result);
+        });
+
+        //add a review API
+        app.get('/review', async (req, res) => {
+            const result = await reviewCollection.find().toArray();
             res.send(result);
         });
     }
