@@ -141,6 +141,16 @@ async function run() {
             res.send({clientSecret: paymentIntent.client_secret})
         });
 
+         //cancel order API
+         app.delete('/order/:id', verifyJWT, async (req, res) => {
+             const id = req.params.id;
+             const filter = {
+                 _id: ObjectId(id)
+             };
+             const result = await orderCollection.deleteOne(filter);
+             res.send(result);
+         });
+
         //update payment information API
         app.patch('/order/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
