@@ -60,6 +60,7 @@ async function run() {
         const orderCollection = client.db('Raiyan_Auto_Mirror').collection('orders');
         const userCollection = client.db('Raiyan_Auto_Mirror').collection('users');
         const paymentCollection = client.db('Raiyan_Auto_Mirror').collection('payments');
+        const reviewCollection = client.db('Raiyan_Auto_Mirror').collection('reviews');
 
         //Item APIs
         //get all items API
@@ -217,6 +218,14 @@ async function run() {
             const user = await userCollection.findOne({email: email});
             const isAdmin = user.role === 'admin';
             res.send({admin: isAdmin});
+        });
+
+        //Review APIs
+        //add a review API
+        app.post('/review', verifyJWT, async (req, res) => {
+            const addReview = req.body;
+            const result = await reviewCollection.insertOne(addReview);
+            res.send(result);
         });
     }
     finally{
