@@ -94,14 +94,14 @@ async function run() {
         });
 
         //add new item API
-        app.post('/item', verifyJWT, verifyAdmin, async (req, res) => {
+        app.post('/item', verifyJWT, async (req, res) => {
             const newProduct = req.body;
             const result = await mirrorCollection.insertOne(newProduct);
             res.send(result);
         });
 
         //delete item API
-        app.delete('/item/:id', verifyJWT, verifyAdmin, async (req, res) => {
+        app.delete('/item/:id', verifyJWT, async (req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await mirrorCollection.deleteOne(filter);
@@ -117,15 +117,17 @@ async function run() {
         });
 
         //get all order API
-        app.get('/order', async (req, res) => {
-            const result = await orderCollection.find().toArray();
-            res.send(result);
-        });
+        // app.get('/order', async (req, res) => {
+        //     const result = await orderCollection.find().toArray();
+        //     res.send(result);
+        // });
 
         //get orders by user email API
         app.get('/order', verifyJWT, async(req, res) => {
-            const decodedEmail = req.decoded.email;
             const email = req.query.email;
+            console.log(email)
+            if(email){
+                const decodedEmail = req.decoded.email;
             if(email === decodedEmail) {
                 const query = {email: email};
                 const orders = await orderCollection.find(query).toArray();
@@ -133,6 +135,11 @@ async function run() {
             }
             else {
                 return res.status(403).send({message: 'Forbidden Access'});
+            }
+            }
+            else{
+                const result = await orderCollection.find().toArray();
+                res.send(result);
             }
         });
 
