@@ -13,13 +13,13 @@ const port = process.env.PORT || 5000;
 const app = express();
 
 //middleware
-app.use(cors());
-// const corsConfig = {
-//     origin: true,
-//     credentials: true,
-// };
-// app.use(cors(corsConfig));
-// app.options("*", cors(cors(corsConfig)));
+// app.use(cors());
+const corsConfig = {
+    origin: true,
+    credentials: true,
+};
+app.use(cors(corsConfig));
+app.options("*", cors(cors(corsConfig)));
 app.use(express.json());
 
 //connect to db
@@ -116,16 +116,16 @@ async function run() {
             res.send(result);
         });
 
-        //get all order API
-        // app.get('/order', async (req, res) => {
-        //     const result = await orderCollection.find().toArray();
-        //     res.send(result);
-        // });
+        // get all order API
+        app.get('/order', verifyJWT, async (req, res) => {
+            const result = await orderCollection.find().toArray();
+            res.send(result);
+        });
 
         //get orders by user email API
         app.get('/order', verifyJWT, async(req, res) => {
             const email = req.query.email;
-            console.log(email)
+            // console.log(email)
             if(email){
                 const decodedEmail = req.decoded.email;
             if(email === decodedEmail) {
