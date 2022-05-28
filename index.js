@@ -94,14 +94,14 @@ async function run() {
         });
 
         //add new item API
-        app.post('/item', verifyJWT, async (req, res) => {
+        app.post('/item', verifyJWT, verifyAdmin, async (req, res) => {
             const newProduct = req.body;
             const result = await mirrorCollection.insertOne(newProduct);
             res.send(result);
         });
 
         //delete item API
-        app.delete('/item/:id', verifyJWT, async (req, res) => {
+        app.delete('/item/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = {_id: ObjectId(id)};
             const result = await mirrorCollection.deleteOne(filter);
@@ -146,8 +146,7 @@ async function run() {
 
         //Payment API
         app.post('/create-payment-intent', verifyJWT, async (req, res) => {
-            const product = req.body;
-            const price = product.price;
+            const {price} = req.body;
             const amount = price*100;
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
