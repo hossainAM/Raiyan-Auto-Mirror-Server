@@ -61,6 +61,22 @@ async function run() {
         const userCollection = client.db('Raiyan_Auto_Mirror').collection('users');
         const paymentCollection = client.db('Raiyan_Auto_Mirror').collection('payments');
         const reviewCollection = client.db('Raiyan_Auto_Mirror').collection('reviews');
+        const profileCollection = client.db('Raiyan_Auto_Mirror').collection('profiles');
+
+        //Verify Admin
+        const verifyAdmin = async (req, res, next) => {
+            const reqSender = req.decoded.email;
+            const reqSenderAccount = await userCollection.findOne({
+                email: reqSender
+            });
+            if (reqSenderAccount.role === 'admin') {
+                next();
+            } else {
+                res.status(403).send({
+                    message: 'Forbidden Access'
+                });
+            }
+        }
 
         //Item APIs
         //get all items API
@@ -101,16 +117,15 @@ async function run() {
         });
 
         //get all order API
-        // app.get('/order', async (req, res) => {
-        //     const result = await orderCollection.find().toArray();
-        //     res.send(result);
-        // });
+        app.get('/order', async (req, res) => {
+            const result = await orderCollection.find().toArray();
+            res.send(result);
+        });
 
         //get orders by user email API
         app.get('/order', verifyJWT, async(req, res) => {
             const decodedEmail = req.decoded.email;
             const email = req.query.email;
-            // const authorization = req.headers.authorization;
             if(email === decodedEmail) {
                 const query = {email: email};
                 const orders = await orderCollection.find(query).toArray();
@@ -137,7 +152,7 @@ async function run() {
             const paymentIntent = await stripe.paymentIntents.create({
                 amount: amount,
                 currency: 'usd',
-                payment_method_types: ['card']
+                payment_method_types: ['card'],
             });
             res.send({clientSecret: paymentIntent.client_secret})
         });
@@ -161,6 +176,7 @@ async function run() {
                 $set: {
                     paid: true,
                     transactionId: payment.transactionId,
+                    status: true,
                 }
             }
             const result = await paymentCollection.insertOne(payment);
@@ -176,22 +192,16 @@ async function run() {
          });
 
        //update a user API 
-        app.put('/user/admin/:email', verifyJWT, async (req, res) => {
+        app.put('/user/admin/:email', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.params.email;
-            const reqSender = req.decoded.email;
-            const reqSenderAccount = await userCollection.findOne({email: reqSender});
-            if(reqSenderAccount.role === 'admin'){
-                const query = { email: email };
-                const updatedDoc = {
+            const query = { email: email };
+            const updatedDoc = {
                 $set: {role: 'admin'},
             };
-                const result = await userCollection.updateOne(query, updatedDoc);
-                res.send(result);
+            const result = await userCollection.updateOne(query, updatedDoc);
+            res.send(result);
             }
-            else{
-                res.status(403).send({message: 'Forbidden Access'})
-            }
-        });
+        );
 
        //update a user API
         app.put('/user/:email', async (req, res) => {
@@ -231,6 +241,29 @@ async function run() {
         //add a review API
         app.get('/review', async (req, res) => {
             const result = await reviewCollection.find().toArray();
+            res.send(result);
+        });
+
+        //user profile APIs
+        //add new profile API
+        app.post('/profile', verifyJWT, async (req, res) => {
+            const addProfile = req.body;
+            const result = await profileCollection.insertOne(addProfile);
+            res.send(result);
+        });
+
+        //update user profile API
+        app.patch('/profile/:email', verifyJWT, async (req, res) => {
+            const email = req.params.email;
+            console.log(email)
+            const profile = req.body;
+            const filter = { email: email };
+            const updateDoc = {
+                $set: {
+                    ...profile
+                }
+            };
+            const result = await profileCollection.updateOne(filter, updateDoc);
             res.send(result);
         });
     }
