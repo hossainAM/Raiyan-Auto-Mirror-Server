@@ -261,7 +261,6 @@ async function run() {
         //update user profile API
         app.patch('/profile/:email', verifyJWT, async (req, res) => {
             const email = req.params.email;
-            console.log(email)
             const profile = req.body;
             const filter = { email: email };
             const updateDoc = {
@@ -270,6 +269,14 @@ async function run() {
                 }
             };
             const result = await profileCollection.updateOne(filter, updateDoc);
+            res.send(result);
+        });
+
+        //get user profile info API
+        app.get('/profile/:email', verifyJWT, async(req, res) => {
+            const email = req.params.email;
+            const query = {email: email};
+            const result = await profileCollection.findOne(query);
             res.send(result);
         });
     }
