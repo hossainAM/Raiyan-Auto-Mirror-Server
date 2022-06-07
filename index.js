@@ -117,10 +117,10 @@ async function run() {
         });
 
         // get all order API
-        app.get('/order', verifyJWT, async (req, res) => {
-            const result = await orderCollection.find().toArray();
-            res.send(result);
-        });
+        // app.get('/order', verifyJWT, async (req, res) => {
+        //     const result = await orderCollection.find().toArray();
+        //     res.send(result);
+        // });
 
         //get orders by user email API
         app.get('/order', verifyJWT, async(req, res) => {
